@@ -20,6 +20,12 @@ async function run() {
         const allToDoCollection = client.db("daily-todo-data-collection").collection("all-todo");
 
 
+          //api for blog post
+          app.post('/post-todo', async (req, res) => {
+            const postToDo = await allToDoCollection.insertOne(req.body)
+            res.send(postToDo)
+        })
+
     }
     finally { }
 }
