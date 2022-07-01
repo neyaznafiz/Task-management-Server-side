@@ -119,7 +119,7 @@ async function run() {
         })
 
         // update to-do api
-        app.put('/update-todo/:id', async (req, res) => {
+        app.put('/update-todo/:id', verifyJWT, async (req, res) => {
             const id = req.params.id
             const updatedTodo = req.body
             const filter = { _id: ObjectId(id) }
