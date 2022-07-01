@@ -37,7 +37,6 @@ async function run() {
         await client.connect()
         const allToDoCollection = client.db("daily-todo-data-collection").collection("all-todo");
         const allUsersCollection = client.db("daily-todo-data-collection").collection("all-users");
-        const completedToDoCollection = client.db("daily-todo-data-collection").collection("completed-todo");
 
 
         // user put api 
@@ -51,31 +50,35 @@ async function run() {
             }
             const result = await allUsersCollection.updateOne(filter, updatedDoc, options)
             const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '20d' })
-            // console.log(result, token);
             res.send({ result, token })
         })
 
-        // app.get('/alltodo', async (req, res) => {
-        //     const todo = await allToDoCollection.find({}).toArray()
-        //     res.send(todo)
-        // })
-
-        app.get('/todo-by-id/:id', async (req, res) => {
-            const getSingleToDoById = await allToDoCollection.findOne({ _id: ObjectId(req.params.id) })
-            res.send(getSingleToDoById)
-        })
-
+       
         //api for todo post
         app.post('/post-todo', async (req, res) => {
             const postToDo = await allToDoCollection.insertOne(req.body)
             res.send(postToDo)
         })
 
-// completed taks api for checkbox
-        app.post('/completed-to-do', async (req, res) => {
-            const postToDo = await completedToDoCollection.insertOne(req.body)
-            res.send(postToDo)
+        // completed taks api for checkbox
+        app.put('/tasks/completed/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email
+            const requester = req.decoded.email
+            const requesterAc = await allToDoCollection.findOne({ email: requester })
+
+            if (requesterAc) {
+                const filter = { email: email }
+                const updatedDoc = {
+                    $set: { role: 'completed' },
+                }
+                const result = await allToDoCollection.updateOne(filter, updatedDoc)
+                res.send(result)
+            }
+            else {
+                res.status(403).send({ message: 'Forbidden' });
+            }
         })
+
 
         // filter by email api all my todo
         app.get("/my-added-to-do", verifyJWT, async (req, res) => {
@@ -89,9 +92,10 @@ async function run() {
             } else {
                 res.status(403).send({ message: "Access denied! Forbidden access" });
             }
-        });
+        })
 
-// filter by email all completed tasks
+
+        // filter by email all completed tasks
         app.get("/completedtask", verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.query.email;
@@ -103,7 +107,7 @@ async function run() {
             } else {
                 res.status(403).send({ message: "Access denied! Forbidden access" });
             }
-        });
+        })
 
         // token api send user database
         app.post("/login", async (req, res) => {
@@ -112,7 +116,14 @@ async function run() {
                 expiresIn: "10d",
             });
             res.send({ accessToken });
-        });
+        })
+
+
+         // todo filterby id for update
+         app.get('/todo-by-id/:id', async (req, res) => {
+            const getSingleToDoById = await allToDoCollection.findOne({ _id: ObjectId(req.params.id) })
+            res.send(getSingleToDoById)
+        })
 
         // update to-do api
         app.put('/update-todo/:id', async (req, res) => {
@@ -129,7 +140,7 @@ async function run() {
         })
 
 
-
+        // delete todo api
         app.delete("/delete-to-do/:id", async (req, res) => {
             const deleteToDo = await allToDoCollection.deleteOne({ _id: ObjectId(req.params.id) });
             res.send(deleteToDo);
