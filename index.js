@@ -37,6 +37,7 @@ async function run() {
         await client.connect()
         const allToDoCollection = client.db("daily-todo-data-collection").collection("all-todo");
         const allUsersCollection = client.db("daily-todo-data-collection").collection("all-users");
+        const completedToDoCollection = client.db("daily-todo-data-collection").collection("completed-todo");
 
 
         // user put api 
@@ -70,7 +71,13 @@ async function run() {
             res.send(postToDo)
         })
 
-        // filter by email api
+// completed taks api for checkbox
+        app.post('/completed-to-do', async (req, res) => {
+            const postToDo = await completedToDoCollection.insertOne(req.body)
+            res.send(postToDo)
+        })
+
+        // filter by email api all my todo
         app.get("/my-added-to-do", verifyJWT, async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.query.email;
@@ -79,6 +86,20 @@ async function run() {
                 const cursor = allToDoCollection.find(query);
                 const myToDo = await cursor.toArray();
                 res.send(myToDo);
+            } else {
+                res.status(403).send({ message: "Access denied! Forbidden access" });
+            }
+        });
+
+// filter by email all completed tasks
+        app.get("/completedtask", verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            const email = req.query.email;
+            if (email === decodedEmail) {
+                const query = { email: email };
+                const cursor = completedToDoCollection.find(query);
+                const myCompletedTask = await cursor.toArray();
+                res.send(myCompletedTask);
             } else {
                 res.status(403).send({ message: "Access denied! Forbidden access" });
             }
@@ -94,7 +115,7 @@ async function run() {
         });
 
         // update to-do api
-        app.put('/update-todo', async (req, res) => {
+        app.put('/update-todo/:id', async (req, res) => {
             const id = req.params.id
             const updatedTodo = req.body
             const filter = { _id: ObjectId(id) }
@@ -105,6 +126,13 @@ async function run() {
             }
             const result = await allToDoCollection.updateOne(filter, updatedDoc, options)
             res.send(result)
+        })
+
+
+
+        app.delete("/delete-to-do/:id", async (req, res) => {
+            const deleteToDo = await allToDoCollection.deleteOne({ _id: ObjectId(req.params.id) });
+            res.send(deleteToDo);
         })
 
     }
