@@ -96,17 +96,26 @@ async function run() {
 
 
         // filter by email all completed tasks
-        app.get("/completedtask", verifyJWT, async (req, res) => {
-            const decodedEmail = req.decoded.email;
-            const email = req.query.email;
-            if (email === decodedEmail) {
-                const query = { email: email };
-                const cursor = completedToDoCollection.find(query);
-                const myCompletedTask = await cursor.toArray();
-                res.send(myCompletedTask);
-            } else {
-                res.status(403).send({ message: "Access denied! Forbidden access" });
-            }
+        // app.get("/completedtask", verifyJWT, async (req, res) => {
+        //     const decodedEmail = req.decoded.email;
+        //     const email = req.query.email;
+        //     if (email === decodedEmail) {
+        //         const query = { email: email };
+        //         const cursor = completedToDoCollection.find(query);
+        //         const myCompletedTask = await cursor.toArray();
+        //         res.send(myCompletedTask);
+        //     } else {
+        //         res.status(403).send({ message: "Access denied! Forbidden access" });
+        //     }
+        // })
+
+        
+        // get completed todo api
+        app.get('/completedtask/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email
+            const todo = await allToDoCollection.findOne({ email: email })
+            const isCompleted = todo?.role === 'completed'
+            res.send({ completed: isCompleted })
         })
 
         // token api send user database
